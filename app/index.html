@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e0e10">
+<link rel="manifest" href="manifest.json">
+<title>Цвет дня</title>
+<style>
+:root{--bg:#0e0e10;--card:#17171b;--line:#26262c;--text:#ececf1;--mute:#8d8d98;
+--m1:#8b1a1a;--m2:#2f5fa8;--m3:#7d7d85;--m4:#e0b72e;--m5:#3fae5a;
+color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Anthropic Serif',Georgia,'Times New Roman',serif;line-height:1.45}
+main{max-width:1100px;margin:0 auto;padding:22px 16px 56px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 20px;margin-bottom:12px}
+h1{margin:0;font-size:clamp(48px,14vw,80px);font-weight:600;letter-spacing:-1px;line-height:1.1}
+#hi{color:var(--mute);font-size:clamp(19px,5vw,26px);font-style:italic;cursor:pointer}
+#legend{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--mute);font-size:14px;margin-bottom:24px}
+#legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+#year{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.mon{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.mon h3{margin:0 0 10px;font-size:18px;font-weight:600;color:var(--mute)}
+.g{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.d{aspect-ratio:1;border-radius:8px;background:#000;border:1px solid #1f1f25;font:inherit;font-size:13px;color:#9a9aa5;display:flex;align-items:center;justify-content:center;position:relative;padding:0;cursor:pointer}
+.d:disabled{cursor:default;color:#3a3a42}
+.d.m1{background:var(--m1);color:#fff;border-color:transparent}
+.d.m2{background:var(--m2);color:#fff;border-color:transparent}
+.d.m3{background:var(--m3);color:#fff;border-color:transparent}
+.d.m4{background:var(--m4);color:#2a2200;border-color:transparent}
+.d.m5{background:var(--m5);color:#fff;border-color:transparent}
+.d.today{outline:2px solid var(--text);outline-offset:2px}
+.d.has::after{content:"";position:absolute;right:4px;bottom:4px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8}
+#sheet,#auth{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:flex-end;justify-content:center;z-index:5}
+#sheet.open,#auth.open{display:flex}
+.box{background:var(--card);width:100%;max-width:540px;max-height:94%;overflow-y:auto;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));border:1px solid var(--line)}
+@media(min-width:640px){#sheet,#auth{align-items:center}.box{border-radius:22px;max-height:90%}}
+h2{margin:0 0 4px;font-size:26px;font-weight:600}
+h2::first-letter{text-transform:uppercase}
+.l{display:block;margin:16px 0 6px;color:var(--mute);font-size:14px}
+textarea,input{width:100%;background:#0e0e10;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit;font-size:16px;resize:vertical}
+textarea:focus,input:focus{outline:2px solid #4a4a55;border-color:transparent}
+#moods{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.mood{background:none;border:0;color:var(--mute);font:inherit;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0;cursor:pointer}
+.mood b{width:38px;height:38px;border-radius:50%}
+.mood.on{color:var(--text)}
+.mood.on b{outline:2px solid var(--text);outline-offset:3px}
+#thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.th{position:relative;width:84px;height:84px}
+.th img{width:100%;height:100%;object-fit:cover;border-radius:10px;cursor:pointer}
+.th button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:#000;color:#fff;font-size:16px;line-height:1;cursor:pointer;padding:0}
+.btn{display:inline-block;background:#232329;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px 16px;font:inherit;font-size:16px;cursor:pointer}
+.pri{background:var(--text);color:#111;border-color:var(--text);font-weight:600}
+.row{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+#err,#aerr{color:#e07a7a;font-size:14px;margin:10px 0 0}
+#big{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:9}
+#big.open{display:flex}
+#big img{max-width:96%;max-height:96%;border-radius:10px}
+[hidden]{display:none!important}
+#acc{margin-left:auto;padding:8px 14px;font-size:14px}
+#who{margin:14px 0 0}
+</style>
+</head>
+<body>
+<main>
+  <header><h1 id="y"></h1><span id="hi"></span><button class="btn" id="acc" hidden></button></header>
+  <div id="legend"></div>
+  <div id="year"></div>
+</main>
+
+<div id="sheet"><div class="box">
+  <h2 id="title"></h2>
+  <span class="l">Оценка дня</span>
+  <div id="moods"></div>
+  <label class="l" for="events">События</label>
+  <textarea id="events" rows="3" placeholder="что сегодня было?"></textarea>
+  <label class="l" for="thoughts">Мысли</label>
+  <textarea id="thoughts" rows="3" placeholder="О чём думалось?"></textarea>
+  <label class="l" for="song">песня дня</label>
+  <input id="song" placeholder="исполнитель – название">
+  <label class="l" for="person">человек дня (виновник настроения)</label>
+  <input id="person" placeholder="кто повлиял на день?">
+  <span class="l">Фото</span>
+  <div id="thumbs"></div>
+  <label class="btn" for="file">добавить фото</label>
+  <input id="file" type="file" accept="image/*" multiple hidden>
+  <p id="err"></p>
+  <div class="row"><button class="btn" id="cancel">отмена</button><button class="btn pri" id="save">сохранить</button></div>
+</div></div>
+<div id="auth"><div class="box">
+  <h2>аккаунт</h2>
+  <div id="in">
+    <label class="l" for="em">почта</label>
+    <input id="em" type="email" autocomplete="username">
+    <label class="l" for="pw">пароль (от 6 символов)</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <div class="row"><button class="btn" id="reg">создать аккаунт</button><button class="btn pri" id="login">войти</button></div>
+  </div>
+  <div id="out">
+    <p id="who"></p>
+    <div class="row"><button class="btn" id="logout">выйти</button><button class="btn pri" id="now">синхронизировать</button></div>
+  </div>
+  <p id="aerr"></p>
+  <div class="row"><button class="btn" id="aclose">закрыть</button></div>
+</div></div>
+<div id="big"><img alt=""></div>
+
+<script>
+const MOODS = ['ужасный', 'плохой', 'обычный', 'хороший', 'лучший'];
+const MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const HI = [
+  'как твой день?', 'как дела?', 'что чувствуешь?', 'выкладывай',
+  'мне можно', 'я тебя слушаю', 'рассказывай', 'я никому не скажу',
+  'ну что, как оно?', 'какого цвета был сегодня день?', 'что на душе?',
+  'можно просто выбрать цвет и помолчать', 'кто сегодня испортил или спас настроение?',
+  'день закончился. подведём итог?', 'хороший, плохой, обычный – всё равно расскажи',
+  'не спеши', 'как ты на самом деле?',
+  'даже серый день заслуживает записи', 'если было тяжело, это тоже можно написать',
+  'что запомнилось сегодня?', 'ты молодец, что бы ни случилось'
+];
+const FIELDS = ['events', 'thoughts', 'song', 'person'];
+
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const key = (y, m, d) => y + '-' + pad(m + 1) + '-' + pad(d);
+const now = new Date();
+const Y = now.getFullYear();
+const todayKey = key(Y, now.getMonth(), now.getDate());
+let days = {};
+let cur = null;
+let db = null;
+
+// ---------- память (IndexedDB) ----------
+function openDb() {
+  return new Promise(ok => {
+    try {
+      const r = indexedDB.open('mood-tracker', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('days', { keyPath: 'date' });
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => ok(null);
+    } catch (e) { ok(null); }
+  });
+}
+function run(mode, fn) {
+  return new Promise(ok => {
+    try {
+      if (!db) return ok(null);
+      const t = db.transaction('days', mode);
+      const q = fn(t.objectStore('days'));
+      t.oncomplete = () => ok({ v: q.result });
+      t.onerror = t.onabort = () => ok(null);
+    } catch (e) { ok(null); }
+  });
+}
+
+// ---------- экран ----------
+function say() {
+  $('#hi').textContent = HI[Math.floor(Math.random() * HI.length)];
+}
+
+function draw() {
+  $('#year').innerHTML = MONTHS.map((name, m) => {
+    const n = new Date(Y, m + 1, 0).getDate();
+    let h = '';
+    for (let d = 1; d <= n; d++) {
+      const k = key(Y, m, d), r = days[k];
+      const has = r && (r.events || r.thoughts || r.song || r.person || (r.photos && r.photos.length));
+      h += '<button class="d' + (r && r.mood ? ' m' + r.mood : '') + (has ? ' has' : '') +
+        (k === todayKey ? ' today' : '') + '" data-k="' + k + '"' + (k > todayKey ? ' disabled' : '') + '>' + d + '</button>';
+    }
+    return '<section class="mon"><h3>' + name + '</h3><div class="g">' + h + '</div></section>';
+  }).join('');
+}
+
+function openDay(k) {
+  const r = days[k] || {};
+  cur = { date: k, mood: r.mood || 0, photos: (r.photos || []).slice() };
+  const p = k.split('-');
+  $('#title').textContent = new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  FIELDS.forEach(f => $('#' + f).value = r[f] || '');
+  paint();
+  $('#sheet').classList.add('open');
+}
+
+function paint() {
+  document.querySelectorAll('.mood').forEach(b => b.classList.toggle('on', +b.dataset.m === cur.mood));
+  $('#thumbs').innerHTML = cur.photos.map((p, i) =>
+    '<div class="th"><img src="' + p + '" data-i="' + i + '" alt=""><button data-x="' + i + '" aria-label="Удалить фото">×</button></div>'
+  ).join('');
+}
+
+function closeSheet() {
+  $('#sheet').classList.remove('open');
+  $('#err').textContent = '';
+}
+
+// уменьшаем фото, чтобы они занимали мало места
+function shrink(file) {
+  return new Promise(ok => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, 800 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * s);
+        c.height = Math.round(img.height * s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        ok(c.toDataURL('image/jpeg', 0.6));
+      };
+      img.onerror = () => ok('');
+      img.src = fr.result;
+    };
+    fr.onerror = () => ok('');
+    fr.readAsDataURL(file);
+  });
+}
+
+// ---------- кнопки ----------
+$('#year').onclick = e => {
+  const b = e.target.closest('.d');
+  if (b && !b.disabled) openDay(b.dataset.k);
+};
+$('#moods').onclick = e => {
+  const b = e.target.closest('.mood');
+  if (!b) return;
+  const m = +b.dataset.m;
+  cur.mood = cur.mood === m ? 0 : m;
+  paint();
+};
+$('#thumbs').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { cur.photos.splice(+x, 1); paint(); }
+  else if (i !== undefined) { $('#big img').src = cur.photos[+i]; $('#big').classList.add('open'); }
+};
+$('#big').onclick = () => $('#big').classList.remove('open');
+$('#file').onchange = async e => {
+  for (const f of e.target.files) {
+    const p = await shrink(f);
+    if (p) cur.photos.push(p);
+  }
+  e.target.value = '';
+  paint();
+};
+$('#cancel').onclick = closeSheet;
+$('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
+$('#hi').onclick = say;
+$('#save').onclick = async () => {
+  const r = { date: cur.date, mood: cur.mood, photos: cur.photos };
+  FIELDS.forEach(f => r[f] = $('#' + f).value.trim());
+  const empty = !r.mood && !r.photos.length && !FIELDS.some(f => r[f]);
+  if (JSON.stringify(r).length > 900000) { $('#err').textContent = 'Слишком много фото за день, убери часть.'; return; }
+  if (empty) { r.deleted = true; r.photos = []; }
+  r.updated = Date.now();
+  days[r.date] = r;
+  const res = await run('readwrite', s => s.put(r));
+  if (sess) put(r).then(() => acc('☁ ' + sess.email)).catch(() => acc('☁ нет связи'));
+  draw();
+  if (!res) { $('#err').textContent = 'Не удалось сохранить в память браузера. Запись пропадёт после закрытия страницы.'; return; }
+  closeSheet();
+};
+
+// ---------- вход и синхронизация (Firebase) ----------
+const FB = { apiKey: 'AIzaSyA35WoDeSGYUkWpNJNvn-UjdHGx-fQ2X2A', projectId: 'color-your-day' };
+const SYNC = !FB.apiKey.startsWith('ВСТАВЬ');
+const ERR = {
+  EMAIL_EXISTS: 'Такая почта уже зарегистрирована.', INVALID_LOGIN_CREDENTIALS: 'Неверная почта или пароль.',
+  EMAIL_NOT_FOUND: 'Неверная почта или пароль.', INVALID_PASSWORD: 'Неверная почта или пароль.',
+  WEAK_PASSWORD: 'Пароль короче 6 символов.', INVALID_EMAIL: 'Проверь почту.', MISSING_PASSWORD: 'Введи пароль.',
+  OPERATION_NOT_ALLOWED: 'В Firebase не включён вход по почте.'
+};
+let sess = null, idToken = '', exp = 0, last = 0;
+
+function acc(t) { $('#acc').textContent = t; }
+async function post(url, body, form) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json' },
+    body: form ? body : JSON.stringify(body)
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error((j.error && j.error.message) || 'error');
+  return j;
+}
+function setSess(uid, refresh, id, sec, email) {
+  sess = { uid, refresh, email: email || (sess && sess.email) || '' };
+  idToken = id || '';
+  exp = id ? Date.now() + (sec - 60) * 1000 : 0;
+  try { localStorage.setItem('sess', JSON.stringify(sess)); } catch (e) {}
+}
+async function tok() {
+  if (Date.now() < exp) return idToken;
+  const j = await post('https://securetoken.googleapis.com/v1/token?key=' + FB.apiKey,
+    'grant_type=refresh_token&refresh_token=' + encodeURIComponent(sess.refresh), true);
+  setSess(j.user_id, j.refresh_token, j.id_token, j.expires_in);
+  return idToken;
+}
+async function api(method, path, body) {
+  const r = await fetch('https://firestore.googleapis.com/v1/projects/' + FB.projectId +
+    '/databases/(default)/documents/users/' + sess.uid + '/days' + path, {
+    method, headers: { Authorization: 'Bearer ' + await tok(), 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+const put = r => api('PATCH', '/' + r.date, { fields: { json: { stringValue: JSON.stringify(r) } } });
+async function list() {
+  const out = []; let t = '';
+  do {
+    const j = await api('GET', '?pageSize=100' + (t ? '&pageToken=' + encodeURIComponent(t) : ''));
+    (j.documents || []).forEach(d => out.push(JSON.parse(d.fields.json.stringValue)));
+    t = j.nextPageToken || '';
+  } while (t);
+  return out;
+}
+// новее запись – та и побеждает
+async function sync() {
+  if (!sess) return;
+  last = Date.now();
+  acc('☁ синхронизация…');
+  try {
+    const remote = await list(), rm = {};
+    for (const r of remote) {
+      rm[r.date] = r;
+      if ((days[r.date] ? days[r.date].updated || 0 : -1) < r.updated) {
+        days[r.date] = r;
+        await run('readwrite', s => s.put(r));
+      }
+    }
+    for (const k in days) if (!rm[k] || (rm[k].updated || 0) < (days[k].updated || 0)) await put(days[k]);
+    draw();
+    acc('☁ ' + sess.email);
+  } catch (e) { acc('☁ нет связи'); }
+}
+function openAuth() {
+  $('#in').hidden = !!sess;
+  $('#out').hidden = !sess;
+  $('#who').textContent = sess ? 'Вы вошли как ' + sess.email : '';
+  $('#aerr').textContent = '';
+  $('#auth').classList.add('open');
+}
+async function enter(kind) {
+  const email = $('#em').value.trim();
+  $('#aerr').textContent = 'Подождите…';
+  try {
+    const j = await post('https://identitytoolkit.googleapis.com/v1/accounts:' + kind + '?key=' + FB.apiKey,
+      { email, password: $('#pw').value, returnSecureToken: true });
+    setSess(j.localId, j.refreshToken, j.idToken, j.expiresIn, email);
+    $('#pw').value = '';
+    $('#auth').classList.remove('open');
+    await sync();
+  } catch (e) {
+    const m = String(e.message), k = Object.keys(ERR).find(x => m.startsWith(x));
+    $('#aerr').textContent = k ? ERR[k] : 'Не получилось. Проверь интернет.';
+  }
+}
+$('#acc').onclick = openAuth;
+$('#aclose').onclick = () => $('#auth').classList.remove('open');
+$('#auth').onclick = e => { if (e.target.id === 'auth') $('#auth').classList.remove('open'); };
+$('#login').onclick = () => enter('signInWithPassword');
+$('#reg').onclick = () => enter('signUp');
+$('#now').onclick = () => { $('#auth').classList.remove('open'); sync(); };
+$('#logout').onclick = () => {
+  sess = null; idToken = ''; exp = 0;
+  try { localStorage.removeItem('sess'); } catch (e) {}
+  acc('Войти');
+  $('#auth').classList.remove('open');
+};
+function startSync() {
+  if (!SYNC) return;
+  try { sess = JSON.parse(localStorage.getItem('sess')); } catch (e) {}
+  $('#acc').hidden = false;
+  acc(sess ? '☁ ' + sess.email : 'Войти');
+  if (sess) sync();
+  document.addEventListener('visibilitychange', () => {
+    if (sess && !document.hidden && Date.now() - last > 120000) sync();
+  });
+}
+
+// ---------- старт ----------
+async function init() {
+  $('#y').textContent = Y;
+  say();
+  $('#legend').innerHTML = MOODS.map((n, i) => '<span><i style="background:var(--m' + (i + 1) + ')"></i>' + n + '</span>').join('') +
+    '<span><i style="background:#000;border:1px solid #333"></i>Не выбрано</span>';
+  $('#moods').innerHTML = MOODS.map((n, i) => '<button class="mood" data-m="' + (i + 1) + '"><b style="background:var(--m' + (i + 1) + ')"></b>' + n + '</button>').join('');
+  draw();
+  db = await openDb();
+  const all = (await run('readonly', s => s.getAll()));
+  if (all && all.v) all.v.forEach(r => days[r.date] = r);
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  draw();
+  const t = $('.today');
+  if (t) t.scrollIntoView({ block: 'center' });
+  startSync();
+}
+init();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
